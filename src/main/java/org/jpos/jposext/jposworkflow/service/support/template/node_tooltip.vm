@@ -1,0 +1,43 @@
+<table class="nodeTooltip">
+	<tr>
+		<td>
+			<table class="nodeTooltipHeader">
+				<tr><td class="nodeTooltipInfo1 $nodeNature">$nodeTooltipInfo1</td></tr>
+			#if ( $nodeTooltipInfo2 )
+				<tr><td class="nodeTooltipInfo2">$nodeTooltipInfo2</td></tr>
+			#end
+			#if ( $nodeTooltipInfo3 )
+				<tr><td class="nodeTooltipInfo3">$nodeTooltipInfo3</td></tr>
+			#end
+			</table>
+		</td>
+	</tr>
+	
+#if ( $guaranteedAttributes || $nonGuaranteedAttributes ) 
+	<tr>
+		<td>
+			<table class="nodeTooltipContent">
+				<tr>
+					<td>
+						<ul>
+					#if ( $guaranteedAttributes )
+						#foreach ( $attr in $guaranteedAttributes )
+							<li class="guaranteedAttribute">$attr</li>
+						#end
+					#else
+					#end
+
+					#if ( $nonGuaranteedAttributes )
+						#foreach ( $attr in $nonGuaranteedAttributes )
+							<li class="nonGuaranteedAttribute">$attr</li>
+						#end
+					#else
+					#end
+						</ul>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+#end				
+</table>

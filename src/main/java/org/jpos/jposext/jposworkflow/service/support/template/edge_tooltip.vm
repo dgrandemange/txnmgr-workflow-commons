@@ -1,0 +1,45 @@
+<table class="edgeTooltip">
+
+	#if ( $sourceIsSubflow )
+		<tr>
+			<td>
+				<h4 class="transitionFromSubflow"/>
+			#if ( $guaranteedAttributes || $nonGuaranteedAttributes )
+					<ul>
+				#if ( $guaranteedAttributes )
+					#foreach ( $attr in $guaranteedAttributes )
+						<li class="guaranteedAttribute">$attr</li>
+					#end
+				#else
+				#end
+		
+				#if ( $nonGuaranteedAttributes )
+					#foreach ( $attr in $nonGuaranteedAttributes )
+						<li class="nonGuaranteedAttribute">$attr</li>
+					#end
+				#else
+				#end
+					</ul>
+			#end
+			</td>
+		</tr>
+	#else
+			<tr class="transition">
+				<td>
+				
+				#if ( $transitionName )
+					<h4>$transitionName</h4>
+				#else
+					<h4 class="defaultTransition"/>
+				#end
+				
+					<ul>
+					#foreach ( $attr in $attributesAdded )
+						<li class="attribute">$attr</li>					
+					#end
+					</ul>
+				</td>
+			</tr>
+	#end	
+				
+</table>
