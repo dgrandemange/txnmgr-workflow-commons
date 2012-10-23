@@ -43,7 +43,7 @@
 		<commons-logging.version>1.1</commons-logging.version>
 		<jdom.version>1.1</jdom.version>
 		<velocity.version>1.7</velocity.version>
-		<context-mgmt-annotation.version>1.0-SNAPSHOT</context-mgmt-annotation.version>
+		<context-mgmt-annotation.version>1.0</context-mgmt-annotation.version>
 	</properties>
   
   <repositories>
