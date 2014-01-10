@@ -1,10 +1,11 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.jpos.jposext</groupId>
-  <artifactId>jpos-workflow-commons</artifactId>
-  <version>1.0.2-SNAPSHOT</version>
-  
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.jpos.jposext</groupId>
+	<artifactId>jpos-workflow-commons</artifactId>
+	<version>1.0.2-SNAPSHOT</version>
+
 	<name>jpos-workflow-commons</name>
 	<url>https://github.com/dgrandemange/jpos-workflow-commons</url>
 
@@ -15,13 +16,9 @@
 	</scm>
 
 	<distributionManagement>
-		<!--
-			To deploy as a snapshot:
-			> mvn -DaltDeploymentRepository=snapshot-repo::default::file:../dgrandemange-mvn-repo/snapshots deploy
-			
-			To deploy as a release :
-			> mvn -DaltDeploymentRepository=repo::default::file:../dgrandemange-mvn-repo/releases deploy		  
-		-->	
+		<!-- To deploy as a snapshot: > mvn -DaltDeploymentRepository=snapshot-repo::default::file:../dgrandemange-mvn-repo/snapshots 
+			deploy To deploy as a release : > mvn -DaltDeploymentRepository=repo::default::file:../dgrandemange-mvn-repo/releases 
+			deploy -->
 		<repository>
 			<id>repo</id>
 			<url>https://github.com/dgrandemange/dgrandemange-mvn-repo/raw/master/releases</url>
@@ -44,10 +41,14 @@
 		<jdom.version>1.1</jdom.version>
 		<velocity.version>1.7</velocity.version>
 		<context-mgmt-annotation.version>1.0</context-mgmt-annotation.version>
+
+		<junit.version>4.11</junit.version>
+		<mockito.version>1.9.5</mockito.version>
+		<fest.version>1.4</fest.version>
 	</properties>
-  
-  <repositories>
- 		<repository>
+
+	<repositories>
+		<repository>
 			<id>dgrandemange-mvn-repo-releases</id>
 			<name>dgrandemange GitHub Maven Repository releases</name>
 			<url>https://github.com/dgrandemange/dgrandemange-mvn-repo/raw/master/releases/</url>
@@ -58,21 +59,21 @@
 			<name>dgrandemange GitHub Maven Repository snapshots</name>
 			<url>https://github.com/dgrandemange/dgrandemange-mvn-repo/raw/master/snapshots/</url>
 		</repository>
-  </repositories>
-  
-  	<dependencies>
+	</repositories>
+
+	<dependencies>
 		<dependency>
 			<groupId>commons-collections</groupId>
 			<artifactId>commons-collections</artifactId>
 			<version>${commons-collections.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>commons-lang</groupId>
 			<artifactId>commons-lang</artifactId>
 			<version>${commons-lang.version}</version>
-		</dependency>		
-		
+		</dependency>
+
 		<dependency>
 			<groupId>commons-logging</groupId>
 			<artifactId>commons-logging</artifactId>
@@ -95,7 +96,7 @@
 					<groupId>javax.servlet</groupId>
 				</exclusion>
 			</exclusions>
-		</dependency>		
+		</dependency>
 
 		<dependency>
 			<groupId>org.jdom</groupId>
@@ -108,13 +109,37 @@
 			<artifactId>velocity</artifactId>
 			<version>${velocity.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.jpos.jposext</groupId>
 			<artifactId>context-mgmt-annotation</artifactId>
 			<version>${context-mgmt-annotation.version}</version>
-		</dependency>		
-		
-  	</dependencies>
-    
+		</dependency>
+
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>${mockito.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>${junit.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.easytesting</groupId>
+			<artifactId>fest-assert</artifactId>
+			<version>${fest.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.easytesting</groupId>
+			<artifactId>fest-reflect</artifactId>
+			<version>${fest.version}</version>
+		</dependency>
+
+	</dependencies>
+
 </project>

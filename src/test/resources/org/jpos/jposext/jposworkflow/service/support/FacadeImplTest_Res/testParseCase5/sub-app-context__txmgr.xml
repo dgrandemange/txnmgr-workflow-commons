@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE SYSTEM [ <!ENTITY Financial SYSTEM "Financial.inc"> ]>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:txnmgr="http://myrecipes.org/"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans	http://www.springframework.org/schema/beans/spring-beans-2.5.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd http://myrecipes.org/ txnmgr.xsd">
+
+	<bean name="propertiesResources" class="java.util.ArrayList">
+		<constructor-arg>
+			<list>
+				<value>classpath:/cfg/app.properties</value>
+
+				<!-- External properties inclusion should be declared on last position -->
+				<value>classpath:/cfg/app-external.properties</value>
+			</list>
+		</constructor-arg>
+	</bean>
+
+	<txnmgr:txnmgr name="kdoTxn" logger="Q2"
+		class="org.jpos.transaction.TransactionManager">
+
+		<txnmgr:participant class="org.jpos.my.Switch" logger="Q2">
+
+			<txnmgr:property name="0200" value="Financial Response Log"
+				transition="incoming message 0200" />
+
+			<txnmgr:property name="0100" value="Authorization Response Log"
+				transition="incoming message 0100" />
+
+			<txnmgr:property name="0220" value="Notification Response Log"
+				transition="incoming message 0220" />
+
+			<txnmgr:property name="0221" value="Notification Response Log"
+				transition="incoming message 0221" />
+
+			<txnmgr:property name="0420" value="Reversal Response Log"
+				transition="incoming message 0420" />
+
+			<txnmgr:property name="0421" value="Reversal Response Log"
+				transition="incoming message 0421" />
+
+			<txnmgr:property name="0500" value="BatchManagement Response Log"
+				transition="incoming message 0500" />
+
+			<txnmgr:property name="0800" value="NetworkManagement Response Log"
+				transition="incoming message 0800" />
+
+			<txnmgr:property name="dummyProp1" value="dummyVal1" />
+
+			<txnmgr:property name="dummyProp2" value="dummyVal2" />
+
+		</txnmgr:participant>
+
+		&Financial;
+
+	</txnmgr:txnmgr>
+
+</beans>

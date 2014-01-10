@@ -1,8 +1,13 @@
 package org.jpos.jposext.jposworkflow.service.support;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -29,6 +34,7 @@ import org.jpos.jposext.jposworkflow.model.Graph;
 import org.jpos.jposext.jposworkflow.model.ParticipantInfo;
 import org.jpos.jposext.jposworkflow.model.SelectCriterion;
 import org.jpos.jposext.jposworkflow.model.SubFlowInfo;
+import org.jpos.jposext.jposworkflow.model.Wrapper;
 import org.jpos.jposext.jposworkflow.service.ITxnMgrConfigParser;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
@@ -49,8 +55,8 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 
 	public class EntityResolverImpl implements EntityResolver {
 
-		private String base;		
-		
+		private String base;
+
 		public EntityResolverImpl(String base) {
 			this.base = base;
 		}
@@ -111,7 +117,7 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 	private Map<String, Graph> graphByEntityRef;
 
 	private DocType defaultDocType;
-	
+
 	private boolean expanded;
 
 	/*
@@ -137,10 +143,39 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 				pathLastToken = matcher.group(2);
 			}
 
-			initParticipants(doc.getRootElement(), groups, pathLastToken);
+			Wrapper txnMgrEltWrapper = new Wrapper(null);
+			findFirstTxnMgrEltAvailable(doc.getRootElement(), txnMgrEltWrapper);
+
+			if (txnMgrEltWrapper.getWrapped() != null) {
+				Element txMgrElt = (Element) txnMgrEltWrapper.getWrapped();
+				initParticipants(txMgrElt, groups, pathLastToken);
+			}
 		}
 
 		return groups;
+	}
+
+	@SuppressWarnings("unchecked")
+	private void findFirstTxnMgrEltAvailable(Element rootElt,
+			Wrapper txnMgrEltWrapper) {
+		if (txnMgrEltWrapper.getWrapped() != null) {
+			// A txmgrElt has already been found, no need to get any further
+			return;
+		}
+
+		if ("txnmgr".equalsIgnoreCase(rootElt.getName())) {
+			txnMgrEltWrapper.setWrapped(rootElt);
+		} else {
+			List<Element> children = rootElt.getChildren();
+			for (Element child : children) {
+				findFirstTxnMgrEltAvailable(child, txnMgrEltWrapper);
+				if (txnMgrEltWrapper.getWrapped() != null) {
+					// A txmgrElt has already been found, no need to get any
+					// further
+					break;
+				}
+			}
+		}
 	}
 
 	protected EntityResolverImpl getEntityResolver(URL url) {
@@ -166,7 +201,7 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 	 */
 	public List<EntityRefInfo> entityRefsTopologicalSort(URL url) {
 		Map<String, EntityRefInfo> entityRefs = new HashMap<String, EntityRefInfo>();
-		
+
 		Map<String, List<String>> entityDeps = listEntityRefsInterDependencies(
 				url, entityRefs);
 
@@ -187,8 +222,8 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 		return res;
 	}
 
-	public Map<String, List<String>> listEntityRefsInterDependencies(
-			URL url, Map<String, EntityRefInfo> entityRefs) {
+	public Map<String, List<String>> listEntityRefsInterDependencies(URL url,
+			Map<String, EntityRefInfo> entityRefs) {
 		Map<String, List<String>> entityDeps = new HashMap<String, List<String>>();
 
 		EntityResolverImpl entityResolver = getEntityResolver(url);
@@ -234,6 +269,15 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 
 		Element config = doc.getRootElement();
 
+		listEntitiesInterDependencies(docType, entityResolver, entityRefs,
+				entityDeps, currentEntityDeps, config);
+	}
+
+	protected void listEntitiesInterDependencies(DocType docType,
+			EntityResolverImpl entityResolver,
+			Map<String, EntityRefInfo> entityRefs,
+			Map<String, List<String>> entityDeps,
+			List<String> currentEntityDeps, Element config) {
 		// Looking for entity references
 		@SuppressWarnings("rawtypes")
 		List content = config.getContent();
@@ -264,6 +308,10 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 						}
 					}
 				}
+			}
+			else if (o instanceof Element) {
+				listEntitiesInterDependencies(docType, entityResolver, entityRefs,
+						entityDeps, currentEntityDeps, (Element) o);
 			}
 		}
 	}
@@ -329,7 +377,8 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 						TXN_MGR_CONFIG__ROOT_ELEMENT);
 
 				is = new EnclosedInputStream(prefix.getBytes(),
-						resolvedUrl.openStream(), suffix.getBytes());
+						removeNamespacePrefix(resolvedUrl.openStream()),
+						suffix.getBytes());
 				doc = builder.build(is);
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -351,6 +400,36 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 		return doc;
 	}
 
+	private InputStream removeNamespacePrefix(InputStream rawIs)
+			throws IOException {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		int read;
+		byte[] buf = new byte[256];
+		while ((read = rawIs.read(buf)) > 0) {
+			bos.write(buf, 0, read);
+		}
+		bos.flush();
+		bos.close();
+
+		ByteArrayOutputStream bosPatched = new ByteArrayOutputStream();
+		PrintWriter pw = new PrintWriter(bosPatched);
+		ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+		BufferedReader reader = new BufferedReader(new InputStreamReader(bis));
+		String line;
+		while ((line = reader.readLine()) != null) {
+			String regexp = "<([/]{0,1})([^> ]*:)([^<]*)";
+			String patchedLine = line.replaceAll(regexp, "<$1$3");
+			pw.println(patchedLine);
+		}
+		pw.flush();
+		pw.close();
+
+		ByteArrayInputStream bisPatched = new ByteArrayInputStream(
+				bosPatched.toByteArray());
+
+		return bisPatched;
+	}
+
 	protected void initParticipants(Element config,
 			Map<String, List<ParticipantInfo>> groups,
 			String entryPointGroupName) {
@@ -365,15 +444,16 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 				// Try to match a group which is named the same as the
 				// entryPointGroupName parameter
 				@SuppressWarnings("rawtypes")
-				Iterator iter = config.getChildren("group").iterator();
+				Iterator iter = config.getChildren("group",
+						config.getNamespace()).iterator();
 				while (iter.hasNext()) {
 					Element e = (Element) iter.next();
 					String name = e.getAttributeValue("name");
 					if (entryPointGroupName.equals(name)) {
 						entryPointIsAGroup = true;
 						@SuppressWarnings("rawtypes")
-						Iterator iterParticipant = e.getChildren("participant")
-								.iterator();
+						Iterator iterParticipant = e.getChildren("participant",
+								e.getNamespace()).iterator();
 						while (iterParticipant.hasNext()) {
 							defaultGroup.add(getParticipantInfo(
 									(Element) iterParticipant.next(),
@@ -387,7 +467,8 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 
 		// Looking for groups
 		@SuppressWarnings("rawtypes")
-		Iterator iter = config.getChildren("group").iterator();
+		Iterator iter = config.getChildren("group", config.getNamespace())
+				.iterator();
 		while (iter.hasNext()) {
 			Element e = (Element) iter.next();
 			String name = e.getAttributeValue("name");
@@ -437,6 +518,8 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 
 				groups.put(ERname, group);
 
+			} else if (o instanceof Element) {
+				// TODO voir si qqchose à faire ici
 			}
 		}
 	}
@@ -444,7 +527,8 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 	protected List<ParticipantInfo> initGroup(Element e, String groupName) {
 		List<ParticipantInfo> group = new ArrayList<ParticipantInfo>();
 		@SuppressWarnings("rawtypes")
-		Iterator iter = e.getChildren("participant").iterator();
+		Iterator iter = e.getChildren("participant", e.getNamespace())
+				.iterator();
 		while (iter.hasNext()) {
 			group.add(getParticipantInfo((Element) iter.next(), groupName));
 		}
@@ -463,6 +547,9 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 				.hasNext();) {
 			Element propertyElt = (Element) descendants.next();
 			Attribute attribute = propertyElt.getAttribute("selectCriterion");
+			if (attribute == null) {
+				attribute = propertyElt.getAttribute("transition");
+			}
 			if (attribute != null) {
 				SelectCriterion criterion = new SelectCriterion(
 						propertyElt.getAttributeValue("name"),
@@ -495,7 +582,8 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 	}
 
 	/**
-	 * @param expanded the expanded to set
+	 * @param expanded
+	 *            the expanded to set
 	 */
 	public void setExpanded(boolean expanded) {
 		this.expanded = expanded;

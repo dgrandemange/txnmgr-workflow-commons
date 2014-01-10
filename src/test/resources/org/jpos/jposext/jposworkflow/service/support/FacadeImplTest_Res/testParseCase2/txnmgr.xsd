@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!-- Generated using Flame-Ware Solutions XML-2-XSD v2.0 at http://www.flame-ware.com/Products/XML-2-XSD/ -->
+<xs:schema id="txnmgr" targetNamespace="http://myrecipes.org/" xmlns:mstns="http://myrecipes.org/" xmlns="http://myrecipes.org/" xmlns:xs="http://www.w3.org/2001/XMLSchema" attributeFormDefault="qualified" elementFormDefault="qualified">
+  <xs:element name="participant">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="property" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:attribute name="name" form="unqualified" type="xs:string" />
+            <xs:attribute name="value" form="unqualified" type="xs:string" />
+            <xs:attribute name="selectCriterion" form="unqualified" type="xs:string" />
+            <xs:attribute name="transition" form="unqualified" type="xs:string" />
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="class" form="unqualified" type="xs:string" />
+      <xs:attribute name="logger" form="unqualified" type="xs:string" />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="txnmgr">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="participant" minOccurs="0" maxOccurs="unbounded" />
+        <xs:element name="group" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element ref="participant" minOccurs="0" maxOccurs="unbounded" />
+            </xs:sequence>
+            <xs:attribute name="name" form="unqualified" type="xs:string" />
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="name" form="unqualified" type="xs:string" />
+      <xs:attribute name="logger" form="unqualified" type="xs:string" />
+      <xs:attribute name="class" form="unqualified" type="xs:string" />
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
