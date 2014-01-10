@@ -82,10 +82,18 @@ public class FacadeImplTest {
 	}
 
 	@Test
+	public void testGetGraphCase6() {
+		URL resource = FacadeImplTest.class
+				.getResource("FacadeImplTest_Res/testParseCase6/20_txnmgr.xml");
+		Graph graph = facade.getGraph(resource, ctxMgmtInfoPopulator);
+		GraphHelper.dumpGraph(graph, new PrintWriter(System.out));
+	}
+	
+	@Test
 	public void testGetGraphCase1_entitesAsSubflow() {
 		URL resource = FacadeImplTest.class
 				.getResource("FacadeImplTest_Res/testParseCase1/20_txnmgr.xml");
-		Graph graph = facade.getGraphSubFlowMode(resource, ctxMgmtInfoPopulator, graphByEntityRef);
+		facade.getGraphSubFlowMode(resource, ctxMgmtInfoPopulator, graphByEntityRef);
 		for (Entry<String, Graph> entry : graphByEntityRef.entrySet()) {
 			System.out.println(entry.getKey());
 			GraphHelper.dumpGraph(entry.getValue(), new PrintWriter(System.out));	
@@ -96,7 +104,7 @@ public class FacadeImplTest {
 	public void testGetGraphCase2_entitesAsSubflow() {
 		URL resource = FacadeImplTest.class
 				.getResource("FacadeImplTest_Res/testParseCase2/20_txnmgr.xml");
-		Graph graph = facade.getGraphSubFlowMode(resource, ctxMgmtInfoPopulator, graphByEntityRef);
+		facade.getGraphSubFlowMode(resource, ctxMgmtInfoPopulator, graphByEntityRef);
 		for (Entry<String, Graph> entry : graphByEntityRef.entrySet()) {
 			System.out.println(entry.getKey());
 			GraphHelper.dumpGraph(entry.getValue(), new PrintWriter(System.out));	
@@ -107,7 +115,7 @@ public class FacadeImplTest {
 	public void testGetGraphCase3_entitesAsSubflow() {
 		URL resource = FacadeImplTest.class
 				.getResource("FacadeImplTest_Res/testParseCase3/Financial.inc");
-		Graph graph = facade.getGraphSubFlowMode(resource, ctxMgmtInfoPopulator, graphByEntityRef);
+		facade.getGraphSubFlowMode(resource, ctxMgmtInfoPopulator, graphByEntityRef);
 		for (Entry<String, Graph> entry : graphByEntityRef.entrySet()) {
 			System.out.println(entry.getKey());
 			GraphHelper.dumpGraph(entry.getValue(), new PrintWriter(System.out));	
@@ -118,7 +126,7 @@ public class FacadeImplTest {
 	public void testGetGraphCase4_entitesAsSubflow() {
 		URL resource = FacadeImplTest.class
 				.getResource("FacadeImplTest_Res/testParseCase4/Financial.inc");
-		Graph graph = facade.getGraphSubFlowMode(resource, ctxMgmtInfoPopulator, graphByEntityRef);
+		facade.getGraphSubFlowMode(resource, ctxMgmtInfoPopulator, graphByEntityRef);
 		for (Entry<String, Graph> entry : graphByEntityRef.entrySet()) {
 			System.out.println(entry.getKey());
 			GraphHelper.dumpGraph(entry.getValue(), new PrintWriter(System.out));	
@@ -129,11 +137,22 @@ public class FacadeImplTest {
 	public void testGetGraphCase5_entitesAsSubflow() {
 		URL resource = FacadeImplTest.class
 				.getResource("FacadeImplTest_Res/testParseCase5/sub-app-context__txmgr.xml");
-		Graph graph = facade.getGraphSubFlowMode(resource, ctxMgmtInfoPopulator, graphByEntityRef);
+		facade.getGraphSubFlowMode(resource, ctxMgmtInfoPopulator, graphByEntityRef);
 		for (Entry<String, Graph> entry : graphByEntityRef.entrySet()) {
 			System.out.println(entry.getKey());
 			GraphHelper.dumpGraph(entry.getValue(), new PrintWriter(System.out));	
 		}
 	}
 
+	@Test
+	public void testGetGraphCase6_entitesAsSubflow() {
+		URL resource = FacadeImplTest.class
+				.getResource("FacadeImplTest_Res/testParseCase6/20_txnmgr.xml");
+		facade.getGraphSubFlowMode(resource, ctxMgmtInfoPopulator, graphByEntityRef);
+		for (Entry<String, Graph> entry : graphByEntityRef.entrySet()) {
+			System.out.println(entry.getKey());
+			GraphHelper.dumpGraph(entry.getValue(), new PrintWriter(System.out));	
+		}
+	}
+	
 }
