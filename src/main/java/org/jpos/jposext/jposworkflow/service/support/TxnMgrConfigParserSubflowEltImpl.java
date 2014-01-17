@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,7 +25,6 @@ import org.jdom.Attribute;
 import org.jdom.DocType;
 import org.jdom.Document;
 import org.jdom.Element;
-import org.jdom.EntityRef;
 import org.jdom.JDOMException;
 import org.jdom.filter.ElementFilter;
 import org.jdom.input.SAXBuilder;
@@ -46,9 +46,8 @@ import org.xml.sax.SAXException;
  * @author dgrandemange
  * 
  */
-public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
+public class TxnMgrConfigParserSubflowEltImpl implements ITxnMgrConfigParser {
 
-	private static final String REGEXP_PATERN__DTD_EXTENSION = "^.*\\.[dD][tT][dD]$";
 	public static final String DEFAULT_GROUP = "";
 	public static final String TXN_MGR_CONFIG__ROOT_ELEMENT = "txnmgr";
 	public static final String TXN_MGR_SUBCONFIG__ENTRYPOINTGROUP__NAMEEXTRACTIONREGEXP = "^(.*/)*([^/].*)\\.[^\\.]*$";
@@ -132,23 +131,56 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 
 		EntityResolver entityResolver = getEntityResolver(url);
 
-		Document doc = getDocument(url, entityResolver, defaultDocType);
+		// Check url query for a subflow param
+		String subflowName = null;
+		String urlQuery = url.getQuery();
+		if (urlQuery != null) {
+			StringTokenizer tokenizer = new StringTokenizer(urlQuery, "&");
+			while (tokenizer.hasMoreElements()) {
+				String nextToken = tokenizer.nextToken();
+				Pattern pattern = Pattern.compile("subflow=(.*)");
+				Matcher matcher = pattern.matcher(nextToken);
+				if (matcher.matches()) {
+					subflowName = matcher.group(1);
+					break;
+				}
+			}
+		}
+
+		// Remove any query part from url
+		URL urlNoQuery;
+		try {
+			urlNoQuery = new URL(url.getProtocol(), url.getHost(),
+					url.getPort(), url.getPath());
+		} catch (MalformedURLException e) {
+			// Too bad ...
+			throw new RuntimeException(e);
+		}
+
+		Document doc = getDocument(urlNoQuery, entityResolver, defaultDocType);
 
 		if (null != doc) {
-			String pathLastToken = null;
-			Pattern pattern = Pattern
-					.compile(TXN_MGR_SUBCONFIG__ENTRYPOINTGROUP__NAMEEXTRACTIONREGEXP);
-			Matcher matcher = pattern.matcher(url.getPath());
-			if (matcher.matches()) {
-				pathLastToken = matcher.group(2);
-			}
 
 			Wrapper txnMgrEltWrapper = new Wrapper(null);
-			findFirstTxnMgrEltAvailable(doc.getRootElement(), txnMgrEltWrapper);
+
+			if (subflowName == null) {
+				Pattern pattern = Pattern
+						.compile(TXN_MGR_SUBCONFIG__ENTRYPOINTGROUP__NAMEEXTRACTIONREGEXP);
+				Matcher matcher = pattern.matcher(url.getPath());
+				if (matcher.matches()) {
+					subflowName = matcher.group(2);
+				}
+				
+				findFirstTxnMgrEltAvailable(doc.getRootElement(),
+						txnMgrEltWrapper);
+			} else {
+				findSubflowEltByName(doc.getRootElement(), subflowName,
+						txnMgrEltWrapper);
+			}
 
 			if (txnMgrEltWrapper.getWrapped() != null) {
 				Element txMgrElt = (Element) txnMgrEltWrapper.getWrapped();
-				initParticipants(txMgrElt, groups, pathLastToken);
+				initParticipants(txMgrElt, groups, subflowName);
 			}
 		}
 
@@ -156,21 +188,51 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void findFirstTxnMgrEltAvailable(Element rootElt,
-			Wrapper txnMgrEltWrapper) {
-		if (txnMgrEltWrapper.getWrapped() != null) {
+	private void findFirstTxnMgrEltAvailable(Element elt, Wrapper eltWrapper) {
+		if (eltWrapper.getWrapped() != null) {
 			// A txmgrElt has already been found, no need to get any further
 			return;
 		}
 
-		if ("txnmgr".equalsIgnoreCase(rootElt.getName())) {
-			txnMgrEltWrapper.setWrapped(rootElt);
+		if ("txnmgr".equalsIgnoreCase(elt.getName())) {
+			eltWrapper.setWrapped(elt);
 		} else {
-			List<Element> children = rootElt.getChildren();
+			List<Element> children = elt.getChildren();
 			for (Element child : children) {
-				findFirstTxnMgrEltAvailable(child, txnMgrEltWrapper);
-				if (txnMgrEltWrapper.getWrapped() != null) {
-					// A txmgrElt has already been found, no need to get any
+				findFirstTxnMgrEltAvailable(child, eltWrapper);
+				if (eltWrapper.getWrapped() != null) {
+					// A matching element has already been found, no need to get
+					// any
+					// further
+					break;
+				}
+			}
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void findSubflowEltByName(Element elt, String subflowName,
+			Wrapper eltWrapper) {
+
+		if (eltWrapper.getWrapped() != null) {
+			// A txmgrElt has already been found, no need to get any further
+			return;
+		}
+
+		if ("subflow".equalsIgnoreCase(elt.getName())) {
+			Element childGroupElt = elt.getChild("group", elt.getNamespace());
+			if (childGroupElt != null) {
+				if (subflowName.equals(childGroupElt.getAttributeValue("name"))) {
+					eltWrapper.setWrapped(elt);
+				}
+			}
+		} else {
+			List<Element> children = elt.getChildren();
+			for (Element child : children) {
+				findSubflowEltByName(child, subflowName, eltWrapper);
+				if (eltWrapper.getWrapped() != null) {
+					// A matching element has already been found, no need to get
+					// any
 					// further
 					break;
 				}
@@ -228,7 +290,7 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 
 		EntityResolverImpl entityResolver = getEntityResolver(url);
 
-		listEntitiesInterDependencies(url, null, entityResolver, entityRefs,
+		listSubflowsInterDependencies(url, null, entityResolver, entityRefs,
 				entityDeps, "", true);
 		return entityDeps;
 	}
@@ -250,7 +312,7 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 		}
 	}
 
-	protected void listEntitiesInterDependencies(URL url, DocType docType,
+	protected void listSubflowsInterDependencies(URL url, DocType docType,
 			EntityResolverImpl entityResolver,
 			Map<String, EntityRefInfo> entityRefs,
 			Map<String, List<String>> entityDeps, String currentEntityName,
@@ -269,58 +331,54 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 
 		Element config = doc.getRootElement();
 
-		listEntitiesInterDependencies(docType, entityResolver, entityRefs,
+		listSubflowsInterDependencies(url, docType, entityResolver, entityRefs,
 				entityDeps, currentEntityDeps, config);
 	}
 
-	protected void listEntitiesInterDependencies(DocType docType,
+	protected void listSubflowsInterDependencies(URL url, DocType docType,
 			EntityResolverImpl entityResolver,
 			Map<String, EntityRefInfo> entityRefs,
 			Map<String, List<String>> entityDeps,
 			List<String> currentEntityDeps, Element config) {
-		// Looking for entity references
-		@SuppressWarnings("rawtypes")
-		List content = config.getContent();
-		@SuppressWarnings("rawtypes")
-		Iterator iterEntityRef = content.listIterator();
-		while (iterEntityRef.hasNext()) {
-			Object o = iterEntityRef.next();
-			if (o instanceof EntityRef) {
-				EntityRef entityRef = (EntityRef) o;
-				String ERname = entityRef.getName();
-				String ERsystemID = entityRef.getSystemID();
+		// Looking for subflow elements
+		for (Object o : config.getChildren()) {
+			Element childElt = (Element) o;
+			if ("subflow".equals((childElt).getName())) {
+				Element subflowElt = childElt;
+				// Search first child element of type 'group'
+				Element firstChildGroup = subflowElt.getChild("group",
+						subflowElt.getNamespace());
+				if (null != firstChildGroup) {
+					String subFlowName = firstChildGroup
+							.getAttributeValue("name");
+					currentEntityDeps.add(subFlowName);
 
-				if (!(ERsystemID.matches(REGEXP_PATERN__DTD_EXTENSION))) {
-					currentEntityDeps.add(ERname);
-					if (!(entityRefs.containsKey(ERname))) {
+					if (!entityDeps.containsKey(subFlowName)) {
+						entityDeps.put(subFlowName, new ArrayList<String>());
+					}
+
+					if (!(entityRefs.containsKey(subFlowName))) {
 						try {
-							String fixedSystemId = entityResolver
-									.fixSystemId(ERsystemID);
-							listEntitiesInterDependencies(
-									new URL(fixedSystemId), docType,
-									entityResolver, entityRefs, entityDeps,
-									ERname, false);
+							String subFlowUrlFile = String
+									.format("%s?subflow=%s", url.getPath(),
+											subFlowName);
+
+							URL subflowUrl = new URL(url.getProtocol(),
+									url.getHost(), url.getPort(),
+									subFlowUrlFile);
+
 							EntityRefInfo entityRefInfo = new EntityRefInfo(
-									ERname, new URL(fixedSystemId));
-							entityRefs.put(ERname, entityRefInfo);
+									subFlowName, subflowUrl);
+							entityRefs.put(subFlowName, entityRefInfo);
 						} catch (Exception e) {
 							throw new RuntimeException(e);
 						}
 					}
 				}
+			} else {
+				listSubflowsInterDependencies(url, docType, entityResolver,
+						entityRefs, entityDeps, currentEntityDeps, childElt);
 			}
-			else if (o instanceof Element) {
-				listEntitiesInterDependencies(docType, entityResolver, entityRefs,
-						entityDeps, currentEntityDeps, (Element) o);
-			}
-		}
-	}
-
-	public void useXmlDocType(URL url) {
-		Document doc = getDocument(url, null, null);
-		DocType docType = doc.getDocType();
-		if (null != docType) {
-			this.defaultDocType = (DocType) docType.clone();
 		}
 	}
 
@@ -329,7 +387,7 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 		SAXBuilder builder = new SAXBuilder();
 
 		builder.setValidation(false);
-		builder.setExpandEntities(!subflowMode);
+		builder.setExpandEntities(true);
 
 		builder.setFeature("http://xml.org/sax/features/namespaces", true);
 		builder.setFeature("http://apache.org/xml/features/xinclude", true);
@@ -465,6 +523,50 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 			}
 		}
 
+		lookForGroups(config, groups, entryPointGroupName, entryPointIsAGroup);
+
+		// Looking for subflows
+		List<Element> subflowEltChilds = config.getChildren("subflow",
+				config.getNamespace());
+
+		for (Element subflowEltChild : subflowEltChilds) {
+			if (!subflowMode) {
+				lookForGroups(subflowEltChild, groups, entryPointGroupName,
+						entryPointIsAGroup);
+			} else {
+				Element childGroupElt = subflowEltChild.getChild("group",
+						subflowEltChild.getNamespace());
+				if (childGroupElt != null) {
+					String subflowName = childGroupElt
+							.getAttributeValue("name");
+
+					Graph subFlowGraph = null;
+					if (null != graphByEntityRef) {
+						subFlowGraph = graphByEntityRef.get(subflowName);
+					}
+
+					SubFlowInfo pInfo = new SubFlowInfo(subflowName,
+							subFlowGraph,
+							new HashMap<String, SelectCriterion>());
+
+					List<String> guaranteedCtxAttributes = new ArrayList<String>();
+					pInfo.setGuaranteedCtxAttributes(guaranteedCtxAttributes);
+
+					List<String> optionalCtxAttributes = new ArrayList<String>();
+					pInfo.setOptionalCtxAttributes(optionalCtxAttributes);
+
+					List<ParticipantInfo> group = new ArrayList<ParticipantInfo>();
+					group.add(pInfo);
+
+					groups.put(subflowName, group);
+				}
+			}
+		}
+	}
+
+	protected void lookForGroups(Element config,
+			Map<String, List<ParticipantInfo>> groups,
+			String entryPointGroupName, boolean entryPointIsAGroup) {
 		// Looking for groups
 		@SuppressWarnings("rawtypes")
 		Iterator iter = config.getChildren("group", config.getNamespace())
@@ -486,41 +588,6 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 						+ "' already defined");
 			}
 			groups.put(name, initGroup(e, name));
-		}
-
-		// Looking for entity references
-		@SuppressWarnings("rawtypes")
-		List content = config.getContent();
-		@SuppressWarnings("rawtypes")
-		Iterator iterEentityRef = content.listIterator();
-		while (iterEentityRef.hasNext()) {
-			Object o = iterEentityRef.next();
-			if (o instanceof EntityRef) {
-				EntityRef entityRef = (EntityRef) o;
-				String ERname = entityRef.getName();
-
-				Graph subFlowGraph = null;
-				if (null != graphByEntityRef) {
-					subFlowGraph = graphByEntityRef.get(ERname);
-				}
-
-				SubFlowInfo pInfo = new SubFlowInfo(ERname, subFlowGraph,
-						new HashMap<String, SelectCriterion>());
-
-				List<String> guaranteedCtxAttributes = new ArrayList<String>();
-				pInfo.setGuaranteedCtxAttributes(guaranteedCtxAttributes);
-
-				List<String> optionalCtxAttributes = new ArrayList<String>();
-				pInfo.setOptionalCtxAttributes(optionalCtxAttributes);
-
-				List<ParticipantInfo> group = new ArrayList<ParticipantInfo>();
-				group.add(pInfo);
-
-				groups.put(ERname, group);
-
-			} else if (o instanceof Element) {
-				// TODO voir si qqchose à faire ici
-			}
 		}
 	}
 

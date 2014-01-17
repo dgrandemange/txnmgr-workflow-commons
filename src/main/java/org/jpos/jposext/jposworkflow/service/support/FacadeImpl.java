@@ -15,73 +15,119 @@ import org.jpos.jposext.jposworkflow.model.SelectCriterion;
 import org.jpos.jposext.jposworkflow.model.SubFlowInfo;
 import org.jpos.jposext.jposworkflow.service.IContextMgmtInfoPopulator;
 import org.jpos.jposext.jposworkflow.service.IFacade;
+import org.jpos.jposext.jposworkflow.service.ITxnMgrConfigParser;
 
 /**
  * Facade implementation
  * 
  * @author dgrandemange
- *
+ * 
  */
 public class FacadeImpl implements IFacade {
-	
+
 	public static final String ROOT_KEY = "<root>";
-	
-	/* (non-Javadoc)
-	 * @see org.jpos.jposext.jposworkflow.service.support.IFacade#getGraph(java.net.URL, org.jpos.jposext.jposworkflow.service.IContextMgmtInfoPopulator)
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.jpos.jposext.jposworkflow.service.support.IFacade#getGraph(java.net
+	 * .URL, org.jpos.jposext.jposworkflow.service.IContextMgmtInfoPopulator)
 	 */
-	public Graph getGraph(URL selectedUrl, IContextMgmtInfoPopulator ctxMgmtInfoPopulator) {
+	public Graph getGraph(URL selectedUrl,
+			IContextMgmtInfoPopulator ctxMgmtInfoPopulator) {
 		Graph res = null;
-		
-		Map<String, Graph> graphByEntityRef = new HashMap<String, Graph>();
-		
-		TxnMgrConfigParserImpl txnMgrConfigParserImpl = new TxnMgrConfigParserImpl();
-		txnMgrConfigParserImpl.setGraphByEntityRef(graphByEntityRef);
+
+		Map<String, Graph> graphBySubflowName = new HashMap<String, Graph>();
+
+		TxnMgrConfigParserSubflowEltImpl txnMgrConfigParserImpl = new TxnMgrConfigParserSubflowEltImpl();
+		txnMgrConfigParserImpl.setGraphByEntityRef(graphBySubflowName);
+		txnMgrConfigParserImpl.setSubFlowMode(false);
+
 		TxnMgrGroupsConverterImpl converter = new TxnMgrGroupsConverterImpl();
 		GraphReducerImpl reducer = new GraphReducerImpl();
-
-		txnMgrConfigParserImpl.setExpanded(true);
 
 		Map<String, List<ParticipantInfo>> jPosTxnMgrGroups = txnMgrConfigParserImpl
 				.parse(selectedUrl);
 
-		ctxMgmtInfoPopulator
-				.processParticipantAnnotations(jPosTxnMgrGroups);
+		ctxMgmtInfoPopulator.processParticipantAnnotations(jPosTxnMgrGroups);
 		Graph graphInter1 = converter.toGraph(jPosTxnMgrGroups);
 		Graph graphInter2 = reducer.reduce(graphInter1);
 
 		// GraphHelper.dumpGraph(graphInter2, new PrintWriter(System.out));
 		ctxMgmtInfoPopulator.updateReducedGraph(graphInter2);
-		
+
 		res = graphInter2;
-		
+
 		return res;
-	}	
-	
-	/* (non-Javadoc)
-	 * @see org.jpos.jposext.jposworkflow.service.support.IFacade#getGraphSubFlowMode(java.net.URL, org.jpos.jposext.jposworkflow.service.IContextMgmtInfoPopulator, java.util.Map)
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.jpos.jposext.jposworkflow.service.support.IFacade#getGraphSubFlowMode
+	 * (java.net.URL,
+	 * org.jpos.jposext.jposworkflow.service.IContextMgmtInfoPopulator,
+	 * java.util.Map)
 	 */
-	public Graph getGraphSubFlowMode(URL selectedUrl, IContextMgmtInfoPopulator ctxMgmtInfoPopulator, Map<String, Graph> graphByEntityRef) {
-		Graph res = null;
+	public Graph getGraphSubFlowMode(URL selectedUrl,
+			IContextMgmtInfoPopulator ctxMgmtInfoPopulator,
+			Map<String, Graph> graphBySubflowName) {
+		
+		TxnMgrConfigParserSubflowEltImpl txnMgrConfigParserImpl = new TxnMgrConfigParserSubflowEltImpl();
+		txnMgrConfigParserImpl.setGraphByEntityRef(graphBySubflowName);
+		txnMgrConfigParserImpl.setSubFlowMode(true);
+
+		return getGraphGenericSubFlowMode(txnMgrConfigParserImpl, selectedUrl,
+				ctxMgmtInfoPopulator, graphBySubflowName);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * org.jpos.jposext.jposworkflow.service.IFacade#getGraphEntityRefsAsSubFlowMode
+	 * (java.net.URL,
+	 * org.jpos.jposext.jposworkflow.service.IContextMgmtInfoPopulator,
+	 * java.util.Map)
+	 */
+	public Graph getGraphEntityRefsAsSubFlowMode(URL selectedUrl,
+			IContextMgmtInfoPopulator ctxMgmtInfoPopulator,
+			Map<String, Graph> graphBySubflowName) {
 		
 		TxnMgrConfigParserImpl txnMgrConfigParserImpl = new TxnMgrConfigParserImpl();
-		txnMgrConfigParserImpl.setGraphByEntityRef(graphByEntityRef);
+		txnMgrConfigParserImpl.setGraphByEntityRef(graphBySubflowName);
+		txnMgrConfigParserImpl.setSubFlowMode(true);
+		txnMgrConfigParserImpl.useXmlDocType(selectedUrl);
+
+		return getGraphGenericSubFlowMode(txnMgrConfigParserImpl, selectedUrl,
+				ctxMgmtInfoPopulator, graphBySubflowName);
+	}
+
+	protected Graph getGraphGenericSubFlowMode(
+			ITxnMgrConfigParser txnMgrConfigParser, URL selectedUrl,
+			IContextMgmtInfoPopulator ctxMgmtInfoPopulator,
+			Map<String, Graph> graphBySubflowName) {
+		Graph res = null;
+
 		TxnMgrGroupsConverterImpl converter = new TxnMgrGroupsConverterImpl();
 		GraphReducerImpl reducer = new GraphReducerImpl();
 
-		txnMgrConfigParserImpl.useXmlDocType(selectedUrl);
-
 		Map<String, EntityRefInfo> entityRefs = new HashMap<String, EntityRefInfo>();
-		Map<String, List<String>> listEntityRefsInterDependencies = txnMgrConfigParserImpl.listEntityRefsInterDependencies(selectedUrl, entityRefs);
-		
-		List<EntityRefInfo> entityRefsTopologicalSort = txnMgrConfigParserImpl.sortEntityRefsTopologicalOrder(entityRefs, listEntityRefsInterDependencies); 
-		entityRefsTopologicalSort.add(new EntityRefInfo(ROOT_KEY,
-				selectedUrl));
+		Map<String, List<String>> listSubflowsInterDependencies = txnMgrConfigParser
+				.listSubflowsInterDependencies(selectedUrl, entityRefs);
+
+		List<EntityRefInfo> entityRefsTopologicalSort = txnMgrConfigParser
+				.sortEntityRefsTopologicalOrder(entityRefs,
+						listSubflowsInterDependencies);
+		entityRefsTopologicalSort.add(new EntityRefInfo(ROOT_KEY, selectedUrl));
 
 		for (EntityRefInfo entityRef : entityRefsTopologicalSort) {
 
 			URL entityRefURL = entityRef.getUrl();
 
-			Map<String, List<ParticipantInfo>> jPosTxnMgrGroups = txnMgrConfigParserImpl
+			Map<String, List<ParticipantInfo>> jPosTxnMgrGroups = txnMgrConfigParser
 					.parse(entityRefURL);
 
 			ctxMgmtInfoPopulator
@@ -90,30 +136,30 @@ public class FacadeImpl implements IFacade {
 			Graph graphInter2 = reducer.reduce(graphInter1);
 
 			String entityRefName = entityRef.getName();
-			graphByEntityRef.put(entityRefName, graphInter2);
+			graphBySubflowName.put(entityRefName, graphInter2);
 
-//				GraphHelper.dumpGraph(graphInter2, new PrintWriter(System.out));
+			// GraphHelper.dumpGraph(graphInter2, new PrintWriter(System.out));
 		}
 
-		Map<String, List<Node>> unresolvedNodesByEntityRefName = new HashMap<String, List<Node>>();
-		for (Entry<String, Graph> entry : graphByEntityRef.entrySet()) {
+		Map<String, List<Node>> unresolvedNodesBySubflowName = new HashMap<String, List<Node>>();
+		for (Entry<String, Graph> entry : graphBySubflowName.entrySet()) {
 			Graph currGraph = entry.getValue();
 			List<Node> unresolvedNodes = GraphHelper
 					.lookForUnresolvedNodes(currGraph);
-			unresolvedNodesByEntityRefName.put(entry.getKey(),
-					unresolvedNodes);
+			unresolvedNodesBySubflowName.put(entry.getKey(), unresolvedNodes);
 		}
 
-		for (Entry<String, List<Node>> entry : unresolvedNodesByEntityRefName
+		for (Entry<String, List<Node>> entry : unresolvedNodesBySubflowName
 				.entrySet()) {
-			List<String> currentFlowDependencies = listEntityRefsInterDependencies
+			List<String> currentFlowDependencies = listSubflowsInterDependencies
 					.get(entry.getKey());
 			for (Node unresolved : entry.getValue()) {
-				String unResolvedGroupName = unresolved
-						.getParticipant().getGroupName();
-				
-				Graph referencedGraph = graphByEntityRef.get(unResolvedGroupName);
-				
+				String unResolvedGroupName = unresolved.getParticipant()
+						.getGroupName();
+
+				Graph referencedGraph = graphBySubflowName
+						.get(unResolvedGroupName);
+
 				if (null != referencedGraph) {
 					if (!(currentFlowDependencies.contains(unResolvedGroupName))) {
 						currentFlowDependencies.add(unResolvedGroupName);
@@ -121,25 +167,27 @@ public class FacadeImpl implements IFacade {
 
 					// Replace unresolved participant info with a subflow
 					// info
-					SubFlowInfo subFlowInfo = new SubFlowInfo(unResolvedGroupName,
-							referencedGraph,
+					SubFlowInfo subFlowInfo = new SubFlowInfo(
+							unResolvedGroupName, referencedGraph,
 							new HashMap<String, SelectCriterion>());
 					unresolved.setParticipant(subFlowInfo);
 				}
 			}
 		}
-		
-		List<EntityRefInfo> finalEntityRefsTopologicalSort = txnMgrConfigParserImpl.sortEntityRefsTopologicalOrder(entityRefs, listEntityRefsInterDependencies); 
-		finalEntityRefsTopologicalSort.add(new EntityRefInfo(ROOT_KEY,
+
+		List<EntityRefInfo> finalSubflowsTopologicalSort = txnMgrConfigParser
+				.sortEntityRefsTopologicalOrder(entityRefs,
+						listSubflowsInterDependencies);
+		finalSubflowsTopologicalSort.add(new EntityRefInfo(ROOT_KEY,
 				selectedUrl));
 
-		for (EntityRefInfo entityRef : finalEntityRefsTopologicalSort) {				
-			ctxMgmtInfoPopulator.updateReducedGraph(graphByEntityRef.get(entityRef.getName()));				
-		}			
+		for (EntityRefInfo entityRef : finalSubflowsTopologicalSort) {
+			ctxMgmtInfoPopulator.updateReducedGraph(graphBySubflowName
+					.get(entityRef.getName()));
+		}
 
-		res = graphByEntityRef.get(ROOT_KEY);
-		
+		res = graphBySubflowName.get(ROOT_KEY);
+
 		return res;
-	}	
-	
+	}
 }

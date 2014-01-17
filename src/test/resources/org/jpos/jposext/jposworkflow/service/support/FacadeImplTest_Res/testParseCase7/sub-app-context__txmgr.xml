@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:txnmgr="http://www.mbs.com/schema/txnmgr"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans	http://www.springframework.org/schema/beans/spring-beans-2.0.xsd http://www.mbs.com/schema/txnmgr txnmgr-0.0.1.xsd">
+
+	<bean id="someList" class="java.util.ArrayList" />
+
+	<txnmgr:txnmgr id="kdoTxn" name="kdoTxn">
+
+		<!-- ======================================== -->
+		<!-- BEGIN Main flow -->
+		<!-- ======================================== -->
+
+		<txnmgr:participant
+			class="com.mbs.springframework.txnmgr.participant.TransactionProcessBegin">
+			<txnmgr:property name="dummyProp1" value="dummyVal1" />
+		</txnmgr:participant>
+
+		<txnmgr:participant
+			class="com.mbs.springframework.txnmgr.participant.Switch">
+
+			<txnmgr:property name="msg0100" value="Authorization Response Log"
+				transition="incoming message 0100" />
+
+			<txnmgr:property name="msg0200" value="Financial Response Log"
+				transition="incoming message 0200" />
+
+			<txnmgr:property name="msg0220" value="Notification Response Log"
+				transition="incoming message 0220" />
+
+			<txnmgr:property name="msg0221" value="Notification Response Log"
+				transition="incoming message 0221" />
+
+			<txnmgr:property name="msg0420" value="Reversal Response Log"
+				transition="incoming message 0420" />
+
+			<txnmgr:property name="msg0421" value="Reversal Response Log"
+				transition="incoming message 0421" />
+
+			<txnmgr:property name="msg0500" value="BatchManagement Response Log"
+				transition="incoming message 0500" />
+
+			<txnmgr:property name="msg0800"
+				value="NetworkManagement Response Log" transition="incoming message 0800" />
+
+			<txnmgr:property name="dummyProp1" value="dummyVal1" />
+
+			<txnmgr:property name="dummyProp2" value="dummyVal2" />
+
+		</txnmgr:participant>
+
+		<txnmgr:group name="Response">
+			<txnmgr:participant
+				class="com.mbs.springframework.txnmgr.participant.Response" />
+		</txnmgr:group>
+
+		<txnmgr:group name="Log">
+			<txnmgr:participant class="com.mbs.springframework.txnmgr.participant.Log" />
+		</txnmgr:group>
+
+		<txnmgr:participant id="kdoTxn.TransactionProcessEnd"
+			class="com.mbs.springframework.txnmgr.participant.TransactionProcessEnd">
+			<txnmgr:property name="dummyProp1" value="dummyVal1" />
+
+			<txnmgr:property name="dummyProp2" ref="someList" />
+
+			<!-- Here follows an example of a Spring bean element (a list) nested 
+				in a txnmgr 'property' element -->
+			<txnmgr:property name="dummyProp3">
+				<list>
+					<value>item1</value>
+					<value>item2</value>
+					<value>item3</value>
+				</list>
+			</txnmgr:property>
+
+		</txnmgr:participant>
+
+		<!-- ======================================== -->
+		<!-- END Main flow -->
+		<!-- ======================================== -->
+
+		<!-- ======================================== -->
+		<!-- BEGIN Subflow Financial -->
+		<!-- ======================================== -->
+		<txnmgr:subflow desc="Financial processing flow">
+		
+			<txnmgr:group name="Financial">
+				<txnmgr:participant
+					class="com.mbs.springframework.txnmgr.participant.CheckRequiredFields">
+					<txnmgr:property name="fields"
+						value="0,3,4,17,49,32,41,43,37,PAN,AMOUNT" />
+
+					<txnmgr:property name="txOk" value="Financial_Suite1"
+						selectCriterion="checked" />
+					<txnmgr:property name="txNok" value=""
+						selectCriterion="unchecked" />
+				</txnmgr:participant>
+			</txnmgr:group>
+
+			<txnmgr:group name="Financial_Suite1">
+				<txnmgr:participant
+					class="com.mbs.springframework.txnmgr.participant.CheckCurrency">
+					<txnmgr:property name="txOk" value="Financial_Suite2"
+						selectCriterion="checked" />
+					<txnmgr:property name="txNok" value=""
+						selectCriterion="unchecked" />
+				</txnmgr:participant>
+			</txnmgr:group>
+
+		</txnmgr:subflow>
+		<!-- ======================================== -->
+		<!-- END Subflow Financial -->
+		<!-- ======================================== -->
+
+		<!-- ======================================== -->
+		<!-- BEGIN Subflow Financial_Suite2 -->
+		<!-- ======================================== -->
+		<txnmgr:subflow desc="Financial_Suite2 processing flow">
+			
+			<txnmgr:group name="Financial_Suite2">
+				<txnmgr:participant
+					class="com.mbs.springframework.txnmgr.participant.FinancialProcessingSuite" />
+			</txnmgr:group>
+					
+		</txnmgr:subflow>		
+		<!-- ======================================== -->
+		<!-- END   Subflow Financial_Suite2 -->
+		<!-- ======================================== -->
+
+	</txnmgr:txnmgr>
+
+</beans>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ 
+ <!DOCTYPE SYSTEM [ 
+ 	<!ENTITY Financial SYSTEM "Financial.inc">
+ 	<!ENTITY Financial_Suite2 SYSTEM "Financial_Suite2.inc"> 
+ ]>
+ 
+<txnmgr id="kdoTxn" name="kdoTxn">
+
+	<!-- ======================================== -->
+	<!-- BEGIN Main flow -->
+	<!-- ======================================== -->
+
+	<participant
+		class="com.mbs.springframework.txnmgr.participant.TransactionProcessBegin">
+		<property name="dummyProp1" value="dummyVal1" />
+	</participant>
+
+	<participant
+		class="com.mbs.springframework.txnmgr.participant.Switch">
+
+		<property name="msg0100" value="Authorization Response Log"
+			transition="incoming message 0100" />
+
+		<property name="msg0200" value="Financial Response Log"
+			transition="incoming message 0200" />
+
+		<property name="msg0220" value="Notification Response Log"
+			transition="incoming message 0220" />
+
+		<property name="msg0221" value="Notification Response Log"
+			transition="incoming message 0221" />
+
+		<property name="msg0420" value="Reversal Response Log"
+			transition="incoming message 0420" />
+
+		<property name="msg0421" value="Reversal Response Log"
+			transition="incoming message 0421" />
+
+		<property name="msg0500" value="BatchManagement Response Log"
+			transition="incoming message 0500" />
+
+		<property name="msg0800"
+			value="NetworkManagement Response Log" transition="incoming message 0800" />
+
+		<property name="dummyProp1" value="dummyVal1" />
+
+		<property name="dummyProp2" value="dummyVal2" />
+
+	</participant>
+
+	<group name="Response">
+		<participant
+			class="com.mbs.springframework.txnmgr.participant.Response" />
+	</group>
+
+	<group name="Log">
+		<participant class="com.mbs.springframework.txnmgr.participant.Log" />
+	</group>
+
+	<participant id="kdoTxn.TransactionProcessEnd"
+		class="com.mbs.springframework.txnmgr.participant.TransactionProcessEnd">
+		<property name="dummyProp1" value="dummyVal1" />
+
+		<property name="dummyProp2" ref="someList" />
+
+		<!-- Here follows an example of a Spring bean element (a list) nested 
+			in a txnmgr 'property' element -->
+		<property name="dummyProp3">
+			<list>
+				<value>item1</value>
+				<value>item2</value>
+				<value>item3</value>
+			</list>
+		</property>
+
+	</participant>
+
+	&Financial;
+	&Financial_Suite2;
+	
+</txnmgr>

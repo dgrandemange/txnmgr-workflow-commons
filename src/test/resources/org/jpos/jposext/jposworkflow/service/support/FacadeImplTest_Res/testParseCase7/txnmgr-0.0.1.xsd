@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<xsd:schema xmlns="http://www.mbs.com/schema/txnmgr"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.mbs.com/schema/txnmgr"
+	attributeFormDefault="qualified" elementFormDefault="qualified">
+
+	<xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+
+	<xsd:annotation>
+		<xsd:documentation><![CDATA[
+	Spring XML Transaction manager Schema, version 0.0.1
+	Authors: Damien Grandemange
+
+	This defines a simple and consistent way of creating a namespace
+	of Transaction Manager related objects, managed by a Spring BeanFactory, read by
+	XmlBeanDefinitionReader (with DefaultBeanDefinitionDocumentReader).
+
+	TODO
+
+		]]></xsd:documentation>
+	</xsd:annotation>
+
+	<xsd:element name="participant">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="property" minOccurs="0" maxOccurs="unbounded">
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:any minOccurs="0" />
+						</xsd:sequence>
+						<xsd:attribute name="name" form="unqualified" type="xsd:string"
+							use="required" />
+						<xsd:attribute name="value" form="unqualified" type="xsd:string" />
+						<xsd:attribute name="ref" form="unqualified" type="xsd:string" />
+						<xsd:attribute name="selectCriterion" form="unqualified"
+							type="xsd:string" />
+						<xsd:attribute name="transition" form="unqualified"
+							type="xsd:string" />						
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:sequence>
+			<xsd:attribute name="class" form="unqualified" type="xsd:string"
+				use="required" />
+			<xsd:attribute name="id" form="unqualified" type="xsd:string" />
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="group">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="participant" minOccurs="1"
+					maxOccurs="unbounded" />
+			</xsd:sequence>
+			<xsd:attribute name="name" form="unqualified" type="xsd:string" use="required"/>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="subflow">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="group" minOccurs="1" maxOccurs="unbounded" />
+			</xsd:sequence>
+			<xsd:attribute name="desc" form="unqualified" type="xsd:string"/>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:group name="ptp-grp-group">
+		<xsd:sequence>
+			<xsd:element ref="participant" minOccurs="0" maxOccurs="unbounded" />
+			<xsd:element ref="group" minOccurs="0" maxOccurs="unbounded" />
+			<xsd:element ref="subflow" minOccurs="0" maxOccurs="unbounded" />
+		</xsd:sequence>
+	</xsd:group>
+
+	<xsd:element name="txnmgr">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="participant" minOccurs="1" maxOccurs="unbounded" />
+				<xsd:group ref="ptp-grp-group" minOccurs="0" maxOccurs="unbounded" />
+			</xsd:sequence>
+			<xsd:attribute name="id" form="unqualified" type="xsd:string"
+				use="required" />
+			<xsd:attribute name="name" form="unqualified" type="xsd:string" />
+		</xsd:complexType>
+	</xsd:element>
+
+</xsd:schema>

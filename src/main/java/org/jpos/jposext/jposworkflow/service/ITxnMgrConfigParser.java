@@ -24,9 +24,26 @@ public interface ITxnMgrConfigParser {
 	/**
 	 * @param url
 	 *            transaction manager XML configuration URL
-	 * @return List of entities referenced by the XML configuration; entities are
-	 *         sorted using a topological sorting algorithm
+	 * @return List of entities referenced by the XML configuration; entities
+	 *         are sorted using a topological sorting algorithm
 	 */
 	public List<EntityRefInfo> entityRefsTopologicalSort(URL url);
+
+	/**
+	 * @param selectedUrl
+	 * @param entityRefs
+	 * @return
+	 */
+	public Map<String, List<String>> listSubflowsInterDependencies(
+			URL selectedUrl, Map<String, EntityRefInfo> entityRefs);
+
+	/**
+	 * @param entityRefs
+	 * @param listSubflowsInterDependencies
+	 * @return
+	 */
+	public List<EntityRefInfo> sortEntityRefsTopologicalOrder(
+			Map<String, EntityRefInfo> entityRefs,
+			Map<String, List<String>> listSubflowsInterDependencies);
 
 }

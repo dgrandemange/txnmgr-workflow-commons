@@ -12,8 +12,8 @@ import org.jpos.jposext.jposworkflow.model.Graph;
 public interface IFacade {
 
 	/**
-	 * Generates a graph from a jPos transaction manager XML configuration<br/>
-	 * Any entity refs are resolved to produce a full expanded graph (no subflows)<br/>
+	 * Generates a graph from a transaction manager XML configuration<br/>
+	 * Graph is full expanded (no subflows)<br/>
 	 * 
 	 * @param selectedUrl [IN] Should point to jPos transaction manager XML configuration file
 	 * @param ctxMgmtInfoPopulator	[IN] An IContextMgmtInfoPopulator implementation
@@ -22,18 +22,33 @@ public interface IFacade {
 	public Graph getGraph(URL selectedUrl,
 			IContextMgmtInfoPopulator ctxMgmtInfoPopulator);
 
+
 	/**
-	 * Generates a graph from a jPos transaction manager XML configuration<br/>
-	 * XML entity refs are NOT expanded. Each are considered a subflow and produces 
-	 * its own graph that can be further retrieved in graphByEntityRef paramater<br/>
+	 * Generates a graph from a transaction manager XML configuration<br/>
+	 * Each &lt;subflow&gt; element is considered a subflow and produces 
+	 * its own graph that can be further retrieved in graphByEntityRef parameter<br/>
 	 * 
-	 * @param selectedUrl [IN] Should point to jPos transaction manager XML configuration file
+	 * @param selectedUrl [IN] Should point to a transaction manager XML configuration file
 	 * @param ctxMgmtInfoPopulator [IN] An IContextMgmtInfoPopulator implementation
-	 * @param graphByEntityRef [IN/OUT] Generated graphs including root graph and subflows 
+	 * @param graphBySubflowName [IN/OUT] Generated graphs including root graph and subflows 
 	 * @return resulting graph
 	 */
 	public Graph getGraphSubFlowMode(URL selectedUrl,
 			IContextMgmtInfoPopulator ctxMgmtInfoPopulator,
-			Map<String, Graph> graphByEntityRef);
-
+			Map<String, Graph> graphBySubflowName);
+	
+	/**
+	 * Generates a graph from a transaction manager XML configuration<br/>
+	 * XML entity references are NOT expanded.<br>
+	 * Each entity reference is considered a subflow and produces 
+	 * its own graph that can be further retrieved in graphByEntityRef parameter<br/>
+	 * 
+	 * @param selectedUrl [IN] Should point to a transaction manager XML configuration file
+	 * @param ctxMgmtInfoPopulator [IN] An IContextMgmtInfoPopulator implementation
+	 * @param graphBySubflowName [IN/OUT] Generated graphs including root graph and subflows 
+	 * @return resulting graph
+	 */
+	public Graph getGraphEntityRefsAsSubFlowMode(URL selectedUrl,
+			IContextMgmtInfoPopulator ctxMgmtInfoPopulator,
+			Map<String, Graph> graphBySubflowName);
 }
