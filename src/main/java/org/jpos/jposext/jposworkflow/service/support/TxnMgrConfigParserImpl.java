@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,7 +54,7 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 	public static final String TXN_MGR_CONFIG__ROOT_ELEMENT = "txnmgr";
 	public static final String TXN_MGR_SUBCONFIG__ENTRYPOINTGROUP__NAMEEXTRACTIONREGEXP = "^(.*/)*([^/].*)\\.[^\\.]*$";
 
-	public class EntityResolverImpl implements EntityResolver {
+	public static class EntityResolverImpl implements EntityResolver {
 
 		private String base;
 
@@ -278,26 +279,43 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 			Map<String, EntityRefInfo> entityRefs,
 			Map<String, List<String>> entityDeps,
 			List<String> currentEntityDeps, Element config) {
-		// Looking for entity references
-		@SuppressWarnings("rawtypes")
-		List content = config.getContent();
-		@SuppressWarnings("rawtypes")
-		Iterator iterEntityRef = content.listIterator();
-		while (iterEntityRef.hasNext()) {
-			Object o = iterEntityRef.next();
-			if (o instanceof EntityRef) {
-				EntityRef entityRef = (EntityRef) o;
-				String ERname = entityRef.getName();
-				String ERsystemID = entityRef.getSystemID();
 
-				if (!(ERsystemID.matches(REGEXP_PATERN__DTD_EXTENSION))) {
+		// Looking for entity references
+
+		Pattern pattern = Pattern
+				.compile("<\\!ENTITY\\s*([a-zA-Z0-9_]*)\\s*.*\\s*SYSTEM\\s*\"(.*)\".*>");
+
+		String docTypeInternalSubset;
+		if (docType != null) {
+			docTypeInternalSubset = docType.getInternalSubset();
+		} else {
+			docTypeInternalSubset = "";
+		}
+		Scanner scanner = new Scanner(docTypeInternalSubset);
+
+		while (scanner.hasNextLine()) {
+			String line = scanner.nextLine();
+			line = line.trim();
+			Matcher matcher = pattern.matcher(line);
+			if (matcher.matches()) {
+				String ERname = matcher.group(1);
+				String ERsystemID = matcher.group(2);
+				boolean refersDTD;
+				if (ERsystemID == null) {
+					refersDTD = false;
+				} else {
+					refersDTD = ERsystemID
+							.matches(REGEXP_PATERN__DTD_EXTENSION);
+				}
+
+				if ((ERsystemID != null) && (!refersDTD)) {
 					currentEntityDeps.add(ERname);
 					if (!(entityRefs.containsKey(ERname))) {
 						try {
 							String fixedSystemId = entityResolver
 									.fixSystemId(ERsystemID);
 							listEntitiesInterDependencies(
-									new URL(fixedSystemId), docType,
+									new URL(fixedSystemId), null,
 									entityResolver, entityRefs, entityDeps,
 									ERname, false);
 							EntityRefInfo entityRefInfo = new EntityRefInfo(
@@ -309,9 +327,17 @@ public class TxnMgrConfigParserImpl implements ITxnMgrConfigParser {
 					}
 				}
 			}
-			else if (o instanceof Element) {
-				listEntitiesInterDependencies(docType, entityResolver, entityRefs,
-						entityDeps, currentEntityDeps, (Element) o);
+		}
+
+		@SuppressWarnings("rawtypes")
+		List content = config.getContent();
+		@SuppressWarnings("rawtypes")
+		Iterator iterEntityRef = content.listIterator();
+		while (iterEntityRef.hasNext()) {
+			Object o = iterEntityRef.next();
+			if (o instanceof Element) {
+				listEntitiesInterDependencies(null, entityResolver,
+						entityRefs, entityDeps, currentEntityDeps, (Element) o);
 			}
 		}
 	}
