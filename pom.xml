@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.jpos.jposext</groupId>
 	<artifactId>jpos-workflow-commons</artifactId>
-	<version>1.0.4-SNAPSHOT</version>
+	<version>1.0.4</version>
 
 	<name>jpos-workflow-commons</name>
 	<url>https://github.com/dgrandemange/jpos-workflow-commons</url>
