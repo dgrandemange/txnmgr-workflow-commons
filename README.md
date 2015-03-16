@@ -1,4 +1,4 @@
-jpos-workflow-commons
-=====================
+txnmgr-workflow-commons
+=======================
 
-common library dedicated to jPos transaction manager representation as a workflow
+common library dedicated to produce a workflow from a transaction manager configuration
