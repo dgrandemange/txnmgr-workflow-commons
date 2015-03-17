@@ -6,8 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import org.jpos.jposext.ctxmgmt.annotation.UpdateContextRule;
-
+import fr.dgrandemange.ctxmgmt.annotation.UpdateContextRule;
 import fr.dgrandemange.txnmgrworkflow.model.Graph;
 import fr.dgrandemange.txnmgrworkflow.model.ParticipantInfo;
 import fr.dgrandemange.txnmgrworkflow.model.SubFlowInfo;
