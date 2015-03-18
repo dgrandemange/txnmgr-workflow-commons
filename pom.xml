@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.github.dgrandemange</groupId>
 	<artifactId>txnmgr-workflow-commons</artifactId>
-	<version>2.0.1</version>
+	<version>2.0.2-SNAPSHOT</version>
 
 	<name>txnmgr-workflow-commons</name>
 	<description>Common library dedicated to transaction manager representation as a workflow</description>
